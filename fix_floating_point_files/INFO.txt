@@ -1,0 +1,1 @@
+Colocar -use_new_parser yes otpion in XST en el ISE para evitar el error de rangos (se transforma en un warning)
