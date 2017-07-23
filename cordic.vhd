@@ -10,7 +10,8 @@ package cordic_lib is
 
     type t_float is std_logic_vector(N_PF-1 downto 0);
     type t_coordenada is t_float;                   -- tipo coordenada (x o y z)
-    type t_pos is array(1 to 2) of t_coordenada;    -- tipo posición (x,y)
+    type t_pos is array(1 to 3) of t_coordenada;    -- tipo posición (x,y,z)
+    type t_vec is array(1 to 2) of t_coordenada;    -- tipo posición (x,y)
     type t_mat_r is array(1 to 2) of t_coordenada;
     type t_mat is array(1 to 2) of t_mat_r;         -- tipo matriz 2x2 de coordenadas
 
@@ -19,8 +20,8 @@ end package cordic_lib;
 package body cordic_lib is
 
     -- Funciôn CORDIC: rotar vector 2D en el plano con ángulo beta (en radianes)
-    function cordic (vector : t_pos, beta : t_float)
-                    return t_pos is
+    function cordic (vector : t_vec, beta : t_float)
+                    return t_vec is
 
         constant P := 16; -- Cantidad de iteraciones, que determina la precisión
 
@@ -45,7 +46,7 @@ package body cordic_lib is
             "00111111000110110111010011101110", "00111111000110110111010011101110", "00111111000110110111010011101110", "00111111000110110111010011101110",
             "00111111000110110111010011101110", "00111111000110110111010011101110" );
 
-        variable v, v_aux: t_pos := vector;
+        variable v, v_aux: t_vec := vector;
         variable sigma: integer := 1;
         variable angle_i: t_float := ANGLES(0);
         variable Kn: t_float;
@@ -59,7 +60,9 @@ package body cordic_lib is
             else
                 v <= cordic(vector, beta - PI_PF);
             end if;
-            return (-1 * v);
+            v(1) <= -1 * v(1);
+            v(2) <= -1 * v(2);
+            return v;
         end if;
 
         if (P > K_VALUES'length) then
