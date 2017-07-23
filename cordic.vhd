@@ -10,15 +10,15 @@ package cordic_lib is
 
     type t_float is std_logic_vector(N_PF-1 downto 0);
     type t_coordenada is t_float;                   -- tipo coordenada (x o y z)
-    type t_pos is array(1 to 3) of t_coordenada;    -- tipo posición (x,y,z)
-    type t_mat_r is array(1 to 3) of t_coordenada;
-    type t_mat is array(1 to 3) of t_mat_r;         -- tipo matriz 3x3 de coordenadas
+    type t_pos is array(1 to 2) of t_coordenada;    -- tipo posición (x,y)
+    type t_mat_r is array(1 to 2) of t_coordenada;
+    type t_mat is array(1 to 2) of t_mat_r;         -- tipo matriz 2x2 de coordenadas
 
 end package cordic_lib;
 
 package body cordic_lib is
 
-    -- beta: ángulo de rotación (en radianes)
+    -- Funciôn CORDIC: rotar vector 2D en el plano con ángulo beta (en radianes)
     function cordic (vector : t_pos, beta : t_float)
                     return t_pos is
 
@@ -48,23 +48,30 @@ package body cordic_lib is
         variable v, v_aux: t_pos := vector;
         variable sigma: integer := 1;
         variable angle_i: t_float := ANGLES(0);
+        variable Kn: t_float;
 
     begin
-        -- if (beta < -pi/2 or beta > pi/2) then   ---Implementar comparación?
+        -- if (beta < -pi/2 or beta > pi/2) then
         if ( (beta + HALF_PI_PF)(0) == '1' or (beta - HALF_PI_PF)(0) == '1' )
             -- if (beta < 0) then
             if (beta(0) == '1') then
-                v <= cordic(vector, beta + PI_PF);     --- PI_PF?
+                v <= cordic(vector, beta + PI_PF);
             else
                 v <= cordic(vector, beta - PI_PF);
             end if;
             return (-1 * v);
         end if;
 
+        if (P > K_VALUES'length) then
+            Kn := K_VALUES(K_VALUES'length - 1);
+        else
+            Kn := K_VALUES(P - 1);
+        end if;
+
         for i in 0 to P-1 loop
-            if (i > ANGLES'length - 1) then
+            if (i > (ANGLES'length - 1)) then
                 -- angle_i := angle_i / 2;
-                angle_i := angle_i sll 1;   -- Si superé la tabla, aproximo
+                angle_i := angle_i srl 1;   -- Si superé la tabla, aproximo
             else
                 angle_i := ANGLES(i);  -- Si no, tabla
             end if;
@@ -75,21 +82,20 @@ package body cordic_lib is
                 sigma = 1;
             end if;
 
-            -- v_aux(0) <= v(0) - sigma * (v(1) * 2^(-i));
-            v_aux(0) <= v(0) - sigma * (v(1) sll i);
-            -- v_aux(1) <= sigma * (v(0) * 2^(-i)) + v(1);
-            v_aux(1) <= sigma * (v(0) sll i) + v(1);
+            -- v_aux(1) <= v(1) - sigma * (v(2) * 2^(-i));
+            v_aux(1) <= v(1) - sigma * (v(2) srl i);
+            -- v_aux(2) <= sigma * (v(1) * 2^(-i)) + v(2);
+            v_aux(2) <= sigma * (v(1) srl i) + v(2);
             v <= v_aux;
 
-            beta = beta - sigma * angle_i;  -- Actualizo ángulo beta faltante
+            -- Actualizo ángulo beta faltante
+            beta = beta - sigma * angle_i;
         end loop;
 
         -- Ajusto magnitud
-        if (P > K_VALUES'length) then
-            v <= v * K_VALUES(K_VALUES'length - 1);
-        else
-            v <= v * K_VALUES(P - 1);
-        end if;
+        for i in 1 to 2 loop
+            v(i) <= Kn * v(i);
+        end loop;
 
         return v;
     end function;
